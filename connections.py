@@ -2,7 +2,7 @@
 """
 Created on Tue Dec  4 11:12:28 2018
 
-@author: TOM is in class
+@author: TOM is in class enthonnede
 """
 
 from exchangelib import DELEGATE, Account, Credentials
