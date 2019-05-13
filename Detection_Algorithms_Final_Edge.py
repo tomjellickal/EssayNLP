@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jan 21 11:56:14 2019
-@author: TOM
+@author: TOM whn in SEW
 """
 # importing needed libraries
 from exchangelib import DELEGATE, Account, Credentials, FileAttachment, HTMLBody, Message,Mailbox, EWSDateTime,EWSTimeZone
