@@ -1,0 +1,438 @@
+---
+title: "MATH 1318 Assignment 2"
+author: "Saikat Mitra (S3726313)"
+date: "12 May 2019"
+output: html_document
+---
+
+## Setup
+
+Setting up the working directory
+
+```{r}
+setwd("C:/Users/Saikat/Desktop/Time Series/Assignment 2")
+
+```
+
+## Packages
+
+Loading the necessary packages
+
+```{r}
+
+library(TSA)
+library(tseries)
+library(lmtest)
+library(fUnitRoots)
+library(dLagM)
+library(FitAR)
+library(forecast)
+
+
+```
+
+## Reading the data
+
+Here the read.csv() function has been used to read the data of the egg depositions (in millions) of age-3  between years 1981 to 1996. The data has been read stored as a dataframe.
+
+```{r}
+
+eggs=read.csv("C:/Users/Saikat/Desktop/Time Series/Assignment 2/eggs.csv")
+class(eggs)
+
+```
+
+## Objective
+
+The objective of this analysis is to analyze the egg depositions of Lake Huron Bloasters by using various time series analysis methods and finally to choose the best model among a set of possible models for this dataset and give forecasts of egg depositions for the next 5 years.
+
+
+## ##Converting the dataset into Time Series and plotting the graph
+
+Here the dataset has been converted into a time series, to be ensured the class() function has been used, And finally the time series values has been put into a graph. 
+
+```{r}
+
+rownames(eggs)<-seq(from=1981, to=1996)
+eggsdata=ts(as.vector(eggs['eggs']), start=1981, end=1996)
+class(eggsdata)
+plot(eggsdata[,'eggs'],type='o',ylab='Egg Depositions of Age-3(in millions)') 
+
+```
+
+
+From the plot we are trying to find out the 5 main characteristics of the data:
+
+Trends: Allthough there are some small changing local trends, the overall series seems to have an upward trend.
+
+Seasonality: The data does not look like to have a constant seasonality. 
+
+Intervention/Changing point:The data has upward and downward movements throughout the series. Like in the year 1984 we can observe an upward movement followed by a steep downward movement in the year 1985. Again in the year 1988, we can see an upward movement followed by another downward movement in 1990. But the data does not look to have any changing point as there is no drastic shift in the flow which is followed by constant data.
+
+Changing Variance: The data seems to have changing variance.
+
+Behaviour: Behaviour: The series looks like non-stationary and has a non constant mean which changes with respect to time. The series has Auto Regressive as well as Moving Average characteristics. So we can conclude an ARIMA model will be a better fit for the series.
+
+## Modelling
+
+As this is a non-stationary series we will start our analysis with the very basic trend analysis models,the Linear model and Quadratic model. We will also perform the residual analysis on both the models if needed. If any of these models become the best fit for the prediction of this particular series, we will stop further analysis and will make our prediction accordingly. 
+
+
+##Linear Model
+
+We are performing the linear modelling for this series because the summary statistics we will obtain from that will help us to decide how well the model fits the series. The summary statistics will come with a p-value for F statistics and R^2 value.
+
+If the p-value belongs to less than 0.05, we will reject the null hypothesis Ho, which is; the model does not fit the data. On the other hand,R^2, the value of the goodness coefficient shows how well the variation in the series can be explained by the model.
+
+
+```{r}
+
+linmod<-lm(eggsdata~time(eggsdata))
+summary(linmod)
+plot(eggsdata,type='o',ylab='y')
+abline(linmod) 
+
+```
+
+Here the observed p-value is less than 0.05, thus we can reject the Null Hypothesis Ho and say that the model fits the series. On the other hand the observed R^2 value is 0.4074 which means only 40.74 percentage of the variation in the egg deposition series can be explained by the Linear trend model.Although the model fits this series,the observed R^2 value is much lesser than 0.8, so this model will not be the best model for the prediction.That's why there is no point of doing the residual analysis of the linear model.
+
+
+## ##Quadratic Model
+
+Just like the Linear model, we will again look for the p-value for F statistics and R^2 value in the Quadratic model too
+
+```{r}
+
+t<- time(eggsdata)
+t2<- t^2
+quadmod<-lm(eggsdata~ t + t2)
+summary(quadmod)
+plot(ts(fitted(quadmod)), ylim = c(min(c(fitted(quadmod),
+                                         as.vector(eggsdata))), max(c(fitted(quadmod),as.vector(eggsdata)))),
+     ylab='y' , main = "Fitted quadratic curve ", type="l",lty=2,col="red")
+lines(as.vector(eggsdata),type="o")
+
+
+```
+
+
+Here the observed p-value is less than 0.05, thus we can reject the Null Hypothesis Ho and say that the model fits the series and the observed R^2 value is 0.5306 which means only 53.06% of the variation in the egg deposition series can be explained by the Quadratic trend model. Like the linear model, the observed R^2 value of the quadratic model is also much lesser than the expected 0.8. So the quadratic model too will not be the best model for the prediction.Thus there is no point of doing the residual analysis of this model.
+
+## ARIMA Model
+
+As both linear and quadratic models have been failed to be the best fitted modles, we will further proceed to the ARIMA modelling. First we have plotted the ACF and the PACF and then we have done the ADF test on the original to test whether trend is present at the data or not.
+
+```{r}
+
+####Plotting the ACF and PACF
+
+par(mfrow=c(1,2))
+acf(eggsdata)
+pacf(eggsdata)
+
+
+####ADF test on the original data
+
+adf.test(eggsdata)
+
+
+```
+
+The slowly decaying pattern of the ACF and a very high first correlation in the PACF indicates that there is trend and non stationarity present in the series. Furthermore the p-value generated from the ADF test confirms the presence of the non stationarity in the series. If it had been less than 0.05, we could say that there is no non stationarity present in the series.
+
+##Boxcox Transformation
+
+Now, to further proceed with the ARIMA model, we need to get rid of the changing variance first. So to do so, we have applied the Box-Cox transformation.
+
+
+```{r}
+
+#Determining the value of lambda
+
+eggsdata.transform = BoxCox.ar(eggsdata, method='yule-walker')
+eggsdata.transform$ci
+lambda=0.45 #the mid point of the interval
+
+```
+
+# Apply the Box-Cox transformation and Checking Normality
+
+After doing the Box-Cox transformation, we have plotted a QQ plot and also done the Shapiro Wilk test to check the normality.
+
+```{r}
+BC.eggsdata = (eggsdata^lambda-1)/lambda 
+par(mfrow=c(1,1))
+qqnorm(BC.eggsdata)
+qqline(BC.eggsdata, col = 2)
+shapiro.test(BC.eggsdata)
+
+```
+
+From the Shapiro Wilk test we have failed to reject the null hypothesis which is the series is normal.
+
+
+## Differencing
+
+Now in order to remove the trend we have done differencing on the data and then have done an ADF test on it to check whether it has been detrended or not.
+
+```{r}
+
+#First differencing
+
+diff.BC.eggsdata = diff(BC.eggsdata)
+plot(diff.BC.eggsdata,type='o',ylab='Egg Depositions(in millions)')
+
+
+#ADF test on the first differenced data
+
+
+adf.test(diff.BC.eggsdata)
+
+```
+
+As the p-value of the ADF test is below 0.05, we can safely say that there is no trend present in the series anymore.Thus we have been able to successfully reject the null hypothesis which says that the series is in non-stationarity.Now we can say our series is stationary.
+
+
+## Determining Order of the Model
+
+To determine our probable ARIMA model, we will now plot the the ACF and PACF again. From the ACF we will get the value of q and from PACF we will get the value PACF.
+
+
+```{r}
+
+acf(diff.BC.eggsdata)
+pacf(diff.BC.eggsdata)
+
+
+```
+
+But there is no significant lag in both the ACF and the PACF,so we could not get any value for p and q. Also the series looks like a white noise. So now we will plot EACF table, to get our probable models.
+
+```{r}
+
+#EACF table
+
+eacf(diff.BC.eggsdata,ar.max = 3, ma.max = 3) 
+
+
+```
+
+From the EACF table we have got three probable models which are- ARIMA(0,1,1),ARIMA(1,1,0),ARIMA(1,1,1).The '1' in the middle is the value of 'd', as we have done only the first order differencing.  Now we will chart the BIC table to get some more probable models.
+
+
+
+```{r}
+
+#BIC table
+
+res3 = armasubsets(y=diff.BC.eggsdata,nar=4,nma=4,y.name='test',ar.method='yule-walker')
+plot(res3)
+
+
+```
+
+
+From the BIC table we have taken probable models which are- ARIMA(3,1,2),ARIMA(3,1,3).
+
+## Parameter Estimation of the Probable Models
+
+So our final set of probable models are ARIMA(0,1,1),ARIMA(1,1,0),ARIMA(1,1,1),ARIMA(3,1,2) and ARIMA(3,1,3). Now we will do the parameter estimation of each models. We have checked the conditional sum of squares (CSS) and the maximum likelihood estimation (ML) of each models and find out whether they are significant or not.If the value of Pr(>|z|) comes under .05, we can say that model is significant and can proceed for the final modelling.
+
+# ARIMA(0,1,1)
+
+```{r}
+
+#CSS
+
+model_011_css = arima(BC.eggsdata,order=c(0,1,1),method='CSS')
+coeftest(model_011_css)
+
+#ML
+
+model_011_ml = arima(BC.eggsdata,order=c(0,1,1),method='ML')
+coeftest(model_011_ml)
+
+```
+
+According to coefficient test MA(1) is not significant.
+
+#ARIMA(1,1,0)
+
+```{r}
+
+#CSS
+
+model_110_css = arima(BC.eggsdata,order=c(1,1,0),method='CSS')
+coeftest(model_110_css)
+
+#ML
+
+model_110_ml = arima(BC.eggsdata,order=c(1,1,0),method='ML')
+coeftest(model_110_ml)
+
+```
+
+According to coefficient test AR(1) is not significant.
+
+#ARIMA(1,1,1)
+
+```{r}
+#CSS
+
+model_111_css = arima(BC.eggsdata,order=c(1,1,1),method='CSS')
+coeftest(model_111_css)
+
+#ML
+
+model_111_ml = arima(BC.eggsdata,order=c(1,1,1),method='ML')
+coeftest(model_111_ml)
+
+```
+
+According to coefficient test ARIMA(1,1,1) is not significant.
+
+#ARIMA(3,1,2)
+
+```{r}
+
+#CSS
+
+model_312_css = arima(BC.eggsdata,order=c(3,1,2),method='CSS')
+coeftest(model_312_css)
+
+#ML
+
+model_312_ml = arima(BC.eggsdata,order=c(3,1,2),method='ML')
+coeftest(model_312_ml)
+
+```
+
+According to coefficient test, we can not conclude whether ARIMA(3,1,2) is significant or not. The reason is CSS is telling us that AR(1),AR(2),MA(1),MA(2) are significant. On the other hand MLE is showing us that only AR(2) and MA (2) are significant.
+
+#ARIMA(3,1,3)
+
+```{r}
+#CSS
+
+model_313_css = arima(BC.eggsdata,order=c(3,1,3),method='CSS')
+coeftest(model_313_css)
+
+#ML
+
+model_313_ml = arima(BC.eggsdata,order=c(3,1,3),method='ML')
+coeftest(model_313_ml)
+
+```
+
+Again,according to coefficient test, we can not conclude whether ARIMA(313) is significant ot not. As CSS is showing some other values and MLE is showing some other.
+
+## Sorting AIC and BIC values
+
+Now we will sort the AIC and BIC value of all the probable models. The model which will have the least value among all the models will be our best fit. 
+
+```{r}
+
+# Sorting AIC and BIC values
+
+sort.score <- function(x, score = c("bic", "aic")){
+  if (score == "aic"){
+    x[with(x, order(AIC)),]
+  } else if (score == "bic") {
+    x[with(x, order(BIC)),]
+  } else {
+    warning('score = "x" only accepts valid arguments ("aic","bic")')
+  }
+}
+
+sort.score(AIC(model_011_ml,model_110_ml,model_111_ml,model_312_ml,model_313_ml), score = "aic")
+sort.score(BIC(model_011_ml,model_110_ml,model_111_ml,model_312_ml,model_313_ml), score = "bic" )
+
+```
+
+According to the AIC and BIC table we can conclude that ARIMA(0,1,1) is the best fit to predict on this particular data.
+
+##Model Overfitting
+
+Now we will test the overfitting of our best model which is ARIMA(0,1,1). To do so we will check whether ARIMA(1,1,1) and ARIMA(0,1,2) is significant or not. We have already checked ARIMA(1,1,1) is significant or not and we found it is insignificant. So now we will only test whether ARIMA(0,1,2) is significant or not. If ARIMA(0,1,2) comes insignificant, we can proceed with ARIMA(0,1,1) model to do the forecast.
+
+
+```{r}
+
+# ARIMA(0,1,2)
+
+#CSS
+
+model_012_css = arima(BC.eggsdata,order=c(0,1,2),method='CSS')
+coeftest(model_012_css)
+
+#ML
+
+model_012_ml = arima(BC.eggsdata,order=c(0,1,2),method='ML')
+coeftest(model_012_ml)
+
+
+```
+
+Both the CSS and the MLE is indicating that ARIMA(0,1,2) is insignificant. Hence we can say that only ARIMA(0,1,1) is our best fit to do the prediction.
+
+## Residual Analysis of the Predictive Model
+
+Here we will do the residual analysis of our predictive model which is ARIMA(0,1,1). This residual analysis includes time series plot of the standardised residuals,histogram of the standardised residuals, QQ Plot of the standardised residuals,ACF of the standardised residuals,Shapiro-Wilk test of the standardised residuals and the Ljung-Box test.
+
+```{r}
+
+residual.analysis <- function(model, std = TRUE){
+  library(TSA)
+  library(FitAR)
+  if (std == TRUE){
+    res.model = rstandard(model)
+  }else{
+    res.model = residuals(model)
+  }
+  par(mfrow=c(3,2))
+  plot(res.model,type='o',ylab='Standardised residuals', main="Time series plot of standardised residuals")
+  abline(h=0)
+  hist(res.model,main="Histogram of standardised residuals")
+  qqnorm(res.model,main="QQ plot of standardised residuals")
+  qqline(res.model, col = 2)
+  acf(res.model,main="ACF of standardised residuals")
+  print(shapiro.test(res.model))
+  k=0
+  LBQPlot(res.model, lag.max = length(model$residuals)-1 , StartLag = k + 1, k = 0, SquaredQ = FALSE)
+  par(mfrow=c(1,1))
+}
+
+residual.analysis(model = model_011_ml)
+par(mfrow=c(1,1))
+
+
+
+
+```
+
+The residual analysis indicates
+
+-standardised normals are randomly distributed over time.
+-histogram looks normally distributed and form a bell shaped curve.
+-QQ plot looks not very alligned.
+-ACF plot does not have any significant lags
+-Shapiro-Wilk normality test indicates that residuals are random with the p-value of 0.3994
+-All p-values in Ljung-Box test plot are above the alpha value.
+
+Although QQplot does not look very alligned and the p-value of the Shapiro-Wilk test is not very high, but the other analysises are satisfying enough to go ahead with the model ARIMA(0,1,1) for the final forecasting.
+
+##Forecasting
+
+We will now do the final forecastong based on the ARIMA(0,1,1) model
+
+```{r}
+
+fit = Arima(eggsdata,c(0,1,1), lambda = .45) 
+plot(forecast(fit,h=5)) 
+
+```
+
+##  Conclusion
+
+As per the forecasting based on the ARIMA(0,1,1) model, the deposition of the eggs should not vary much and should maintain a constant flow.
+
