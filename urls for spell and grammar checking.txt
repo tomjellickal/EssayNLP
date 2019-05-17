@@ -1,0 +1,11 @@
+URLs for Spell and Grammar Checking
+
+https://github.com/bencmbrook/grammar-checker
+
+https://pypi.org/project/language-check/
+
+https://github.com/amrrs/article-spell-checker
+
+https://hackernoon.com/build-a-naive-article-spell-checker-in-10-lines-of-python-code-b325a67f2c3
+
+https://norvig.com/spell-correct.html
