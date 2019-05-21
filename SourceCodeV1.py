@@ -30,7 +30,7 @@ from sklearn.metrics import classification_report
 from __future__ import division
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
-
+import string
 # load the learning data
 
 data = pd.read_csv('C:\\Users\\vinay\\Desktop\\NLP\\Automated-Essay-Scoring-master\\Automated-Essay-Scoring-master\\essays_and_scores.csv', encoding = 'latin-1')
@@ -187,6 +187,15 @@ def get_count_vectors(essays):
     feature_names = vectorizer.get_feature_names()    
     return feature_names, count_vectors
 
+# To count number of punctuations
+
+def punctuation_count(essay):
+    count = lambda l1, l2: len(list(filter(lambda c: c in l2, l1)))
+    a_punct = count(essay.replace('.',''), string.punctuation)
+    return a_punct
+
+
+
 # extracting essay features
 
 def extract_features(data):
@@ -199,6 +208,8 @@ def extract_features(data):
     features['spelling_err_count'] = features['essay'].apply(spelling_error_count) 
     features['noun_count'],features['proper_noun_count'], features['adj_count'], features['verb_count'], features['adv_count'] = zip(*features['essay'].map(pos_count))
     features['complex_word_count'] = features['essay'].apply(complex_word_count)
+    features['punctuation_count'] = features['essay'].apply(punctuation_count)
+
     return features
 
 #Delta
