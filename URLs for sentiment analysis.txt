@@ -1,0 +1,11 @@
+Sentiment Analysis
+
+https://programminghistorian.org/en/lessons/sentiment-analysis
+
+https://www.datacamp.com/community/tutorials/simplifying-sentiment-analysis-python
+
+https://medium.com/analytics-vidhya/simplifying-social-media-sentiment-analysis-using-vader-in-python-f9e6ec6fc52f
+
+https://monkeylearn.com/sentiment-analysis/
+
+https://www.researchgate.net/publication/312176414_Sentiment_Analysis_in_Python_using_NLTKc
